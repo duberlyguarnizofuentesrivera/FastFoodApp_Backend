@@ -110,10 +110,12 @@ public class UserServiceImp implements IUserService, UserDetailsService {
             }
         }
         if(user.getUrlImage()==null && file == null){
-            user.setUrlImage(null);
+            userOld.setUrlImage(null);
+        }
+        if(user.getUrlImage()!=null){
+            userOld.setUrlImage(userOld.getUrlImage());
         }
         userOld.setStatus(user.getStatus());
-        userOld.setUserRoles(user.getUserRoles());
         return convertUserToDTO(userRepository.save(userOld));
     }
 
@@ -132,7 +134,9 @@ public class UserServiceImp implements IUserService, UserDetailsService {
         userOld.setName(userClientDTO.getName());
         userOld.setPhone(userClientDTO.getPhone());
         userOld.setEmail(userClientDTO.getEmail());
-        userOld.setPassword(bCryptPasswordEncoder.encode(userClientDTO.getPassword()));
+        if (userClientDTO.getPassword() != null) {
+            userOld.setPassword(bCryptPasswordEncoder.encode(userClientDTO.getPassword()));
+        }
         userOld.setStatus(userClientDTO.getStatus());
         userOld.setUrlImage(userClientDTO.getUrlImage());
         if (file != null) {
@@ -141,6 +145,9 @@ public class UserServiceImp implements IUserService, UserDetailsService {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+        if(userClientDTO.getUrlImage()==null && file == null){
+            userOld.setUrlImage(null);
         }
         return convertUserToDTO(userRepository.save(userOld));
     }
@@ -160,7 +167,13 @@ public class UserServiceImp implements IUserService, UserDetailsService {
     public User updatePasswordClient(String username, String password) {
         log.info("Updating password username: " + username);
         User user = userRepository.findByUsername(username);
-        user.setPassword(bCryptPasswordEncoder.encode(password));
+        if(user==null){
+            log.error("User with username: " + username + " not found");
+            throw new UsernameNotFoundException("User with username: " + username + " not found");
+        }else {
+            user.setPassword(bCryptPasswordEncoder.encode(password));
+            System.out.println(bCryptPasswordEncoder.encode(password));
+        }
         return userRepository.save(user);
     }
 
@@ -221,7 +234,6 @@ public class UserServiceImp implements IUserService, UserDetailsService {
     public UserDTO findByEmail(String email) {
         log.info("Searching user by email: " + email);
         return userRepository.findByEmail(email) != null ? convertUserToDTO(userRepository.findByEmail(email)) : null;
-
     }
 
     public UserEmailDTO findByEmailValid(String email) {
